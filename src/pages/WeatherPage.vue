@@ -29,8 +29,8 @@
           color="white"
           text-color="primary"
           :options="[
-            { label: 'Metric', value: 'metric' },
-            { label: 'Imperial', value: 'imperial' },
+            { label: 'Metric', value: unitValues.metric },
+            { label: 'Imperial', value: unitValues.imperial },
           ]"
           class="q-mx-sm"
           @update:model-value="onUnitChange"
@@ -48,18 +48,6 @@
           unelevated
         />
       </div>
-
-      <!-- Display results -->
-      <!-- <div v-if="coordinates" class="q-mt-md">
-        <q-card>
-          <q-card-section>
-            <div><strong>Latitude:</strong> {{ coordinates.lat }}</div>
-            <div><strong>Longitude:</strong> {{ coordinates.lon }}</div>
-            <div><strong>Country:</strong> {{ coordinates.country }}</div>
-            <div v-if="coordinates.name"><strong>Name:</strong> {{ coordinates.name }}</div>
-          </q-card-section>
-        </q-card>
-      </div> -->
 
       <!-- Show error message -->
       <div v-if="error" class="text-negative q-mt-md">
@@ -236,21 +224,33 @@
 import type { WeatherData } from 'src/interfaces/weatherData';
 import { ref } from 'vue';
 
+
+const VITE_API_URL = import.meta.env.VITE_API_URL;
+const API_KEY = import.meta.env.VITE_API_KEY;
+const unitValues = {metric:"metric",imperial:"imperial"};
+// Reactive state
+const isLoading = ref(false);
+const cityName = ref('');
+const weather = ref<WeatherData | null>(null);
+const unitSystem = ref(unitValues.metric); // Default to metric
+const coordinates = ref<null | { lat: number; lon: number; name?: string; country?: string }>(null);
+const error = ref<string | null>(null);
+const emit = defineEmits(['unit-change']);
+
 // Temperature unit
 const tempUnit = () => {
-  return unitSystem.value === 'metric' ? 'C' : 'F';
+  return unitSystem.value === unitValues.metric ? 'C' : 'F';
 };
-
 // Wind unit
 const windUnit = () => {
-  return unitSystem.value === 'metric' ? 'm/s' : 'mph';
+  return unitSystem.value === unitValues.metric ? 'm/s' : 'mph';
 };
 
 // Format visibility based on unit system
 const formatVisibility = (visibilityInMeters: number) => {
   if (!visibilityInMeters) return 'N/A';
 
-  if (unitSystem.value === 'metric') {
+  if (unitSystem.value === unitValues.metric) {
     // Metric: show in kilometers
     return `${(visibilityInMeters / 1000).toFixed(1)} km`;
   } else {
@@ -259,18 +259,6 @@ const formatVisibility = (visibilityInMeters: number) => {
     return `${miles.toFixed(1)} mi`;
   }
 };
-
-const VITE_API_URL = import.meta.env.VITE_API_URL;
-const API_KEY = import.meta.env.VITE_API_KEY;
-
-// Reactive state
-const isLoading = ref(false);
-const cityName = ref('');
-const weather = ref<WeatherData | null>(null);
-const unitSystem = ref('metric'); // Default to metric
-const coordinates = ref<null | { lat: number; lon: number; name?: string; country?: string }>(null);
-const error = ref<string | null>(null);
-const emit = defineEmits(['unit-change']);
 
 // Emit when unit changes
 const onUnitChange = async (value: Event) => {
@@ -294,7 +282,6 @@ const getCoordinatesFromCityName = async () => {
 
   // Properly encode the city name for URL
   const encodedCityName = encodeURIComponent(trimmedCity);
-  //   const apiUrl = `${VITE_API_URL}${encodedCityName},${stateCode.value},${countryCode.value}&limit=1&appid=${API_KEY}`;
   const apiUrl = `${VITE_API_URL}${encodedCityName}&appid=${API_KEY}&units=${unitSystem.value}`;
   try {
     const response = await fetch(apiUrl);
