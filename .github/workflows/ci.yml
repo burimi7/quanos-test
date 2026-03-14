@@ -15,12 +15,12 @@ jobs:
           node-version: '20'
           
       - name: Install dependencies
-        run: npm ci
+        run: npm install  # Changed from npm ci to npm install
         
       - name: Build with env vars
         run: npm run build
         env:
-          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}  # Injected here!
+          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
           
       - name: Copy 404.html
         run: cp dist/spa/index.html dist/spa/404.html
